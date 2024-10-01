@@ -9,6 +9,7 @@ from fastapi.responses import JSONResponse
 from booking.exceptions import BookingStatusException, BookingNotFoundException, BookingException
 from fastapi.responses import JSONResponse
 from auth import authentication
+from fastapi.staticfiles import StaticFiles
 
 app = FastAPI()
 app.include_router(user_get.router)
@@ -21,6 +22,8 @@ app.include_router(authentication.router)
 
 models.Base.metadata.create_all(engine)
 
+# to make the images folder accessible from the browser
+app.mount("/images", StaticFiles(directory="images"), name="images")
 
 @app.get("/")
 def read_root():

@@ -1,5 +1,6 @@
 from fastapi import APIRouter, File, UploadFile, HTTPException
 import shutil
+from fastapi.responses import FileResponse
 
 router = APIRouter(
     prefix="/file",
@@ -25,3 +26,8 @@ def upload_file(file: UploadFile = File(...)):
         shutil.copyfileobj(file.file, buffer)
 
     return {"filename": file.filename, "content_type": file.content_type}
+
+@router.get("/download/{name}", response_class=FileResponse)
+def download_file(name:str):
+    path = f"images/{name}"
+    return path
