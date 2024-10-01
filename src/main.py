@@ -1,6 +1,6 @@
 import booking.controller
 from fastapi import FastAPI, Request, status
-from router import user_get, user_post, hotel
+from router import user_get, user_post, hotel,file, excel_file
 from db import models
 from db.database import engine
 from exceptions import InconsistentDatesException, DatesException
@@ -12,6 +12,8 @@ from auth import authentication
 
 app = FastAPI()
 app.include_router(user_get.router)
+app.include_router(file.router)
+app.include_router(excel_file.router)
 app.include_router(user_post.router)
 app.include_router(hotel.router)
 app.include_router(booking.controller.router)
