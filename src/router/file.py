@@ -1,4 +1,5 @@
 from fastapi import APIRouter, File, UploadFile, HTTPException
+import shutil
 
 router = APIRouter(
     prefix="/file",
@@ -16,3 +17,11 @@ async def upload_file(file: UploadFile = File(...)):
     lines = content_str.split("\n")
     
     return {"filename": file.filename, "lines": lines}
+
+@router.post("/upload")
+def upload_file(file: UploadFile = File(...)):
+    path = f"images/{file.filename}"
+    with open(path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+
+    return {"filename": file.filename, "content_type": file.content_type}
