@@ -1,9 +1,11 @@
 from typing import List
-from fastapi import APIRouter, Depends,status
+from fastapi import APIRouter, Depends,status, BackgroundTasks
 from sqlalchemy.orm import Session
 from db.database import get_db
 from db import db_hotel
 from schemas import HotelBase, HotelDisplay
+from custom_log import log, custom_call_log
+
 
 
 
@@ -24,7 +26,8 @@ def update_hotel(id:int, request: HotelBase, db:Session =Depends(get_db)):
 
 # get all hotels
 @router.get("/", response_model=List[HotelDisplay])
-async def get_all_hotels(db:Session = Depends(get_db)):
+async def get_all_hotels(bt: BackgroundTasks, db:Session = Depends(get_db)):
+    bt.add_task(custom_call_log, f"Get all hotels")
     result = db_hotel.get_all_hotels(db)
     return result
 
