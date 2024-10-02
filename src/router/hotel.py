@@ -22,6 +22,12 @@ def create_hotel(request: HotelBase, db:Session = Depends(get_db)):
 def update_hotel(id:int, request: HotelBase, db:Session =Depends(get_db)):
     return db_hotel.update_hotel(db,id,request)
 
+# get all hotels
+@router.get("/", response_model=List[HotelDisplay])
+async def get_all_hotels(db:Session = Depends(get_db)):
+    result = db_hotel.get_all_hotels(db)
+    return result
+
 
 # get specific hotel
 @router.get("/hotels/{id}", response_model = HotelDisplay)

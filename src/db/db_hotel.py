@@ -42,6 +42,10 @@ def create_hotel(db: Session, request: HotelBase):
     db.refresh(new_hotel)
     return new_hotel
 
+def get_all_hotels(db:Session):
+    hotels = db.query(DbHotel).all()
+    return hotels
+
 def get_hotel(db: Session, id: int):
     hotel = db.query(DbHotel).filter(DbHotel.id == id).first()
     if not hotel:

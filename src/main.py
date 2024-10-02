@@ -10,6 +10,7 @@ from booking.exceptions import BookingStatusException, BookingNotFoundException,
 from fastapi.responses import JSONResponse
 from auth import authentication
 from fastapi.staticfiles import StaticFiles
+import time
 
 app = FastAPI()
 app.include_router(user_get.router)
@@ -28,6 +29,14 @@ app.mount("/images", StaticFiles(directory="images"), name="images")
 @app.get("/")
 def read_root():
     return "Hello PyBooking!"
+
+@app.middleware("http")
+async def get_duration(request: Request, next_call):
+    start_time = time.time()
+    response = await next_call(request)
+    duration = time.time() - start_time
+    response.headers["Duration"] = str(duration)
+    return response
 
 
 @app.exception_handler(BookingStatusException)

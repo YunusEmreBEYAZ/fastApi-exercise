@@ -12,6 +12,8 @@ pip install pandas openpyxl
 pip install aiofiles
 pip install pytest
 pip install requests
+pip install httpx
+
 
 
 # run
