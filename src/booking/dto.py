@@ -1,31 +1,31 @@
 import datetime
 from schemas import Hotel
-from db.booking_status_enum import BookingStatusEnum
 from pydantic import BaseModel, field_validator
 
 
 class BookingDto(BaseModel):
     id: int
-    room_amount: int
+    rooms_amount: int
     guests_count: int
-    date_start: datetime.date
-    date_end: datetime.date
-    status: BookingStatusEnum
+    checkin: datetime.date
+    checkout: datetime.date
     additional_info: str
     client_username: str
     hotel: Hotel
+    room_id: int
+    room_guests_count: int
 
 
 class BookingPostRequest(BaseModel):
-    room_amount: int
-    guests_count: int
-    date_start: datetime.date
-    date_end: datetime.date
-    additional_info: str
-    client_username: str
+    rooms_amount: int = 1
+    guests_count: int = 1
+    checkin: datetime.date
+    checkout: datetime.date
+    additional_info: str = ''
     hotel_id: int
+    room_id: int
 
-    @field_validator("room_amount", "guests_count")
+    @field_validator("rooms_amount", "guests_count")
     def check_negative(cls, val):
         if val <= 0:
             raise ValueError(f"Value {val} is incorrect. Should be positive")

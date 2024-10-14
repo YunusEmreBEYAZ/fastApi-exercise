@@ -1,3 +1,6 @@
 __pycache__
 fastapi-venv/
 /src/db/Pybooking.db
+src/router/__pycache__
+conflict.py
+files

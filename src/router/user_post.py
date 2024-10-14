@@ -1,34 +1,18 @@
-from fastapi import APIRouter, Depends
-from schemas import UserBase, UserDisplay
+from fastapi import APIRouter, Depends, UploadFile, File
+from schemas import UserBase, UserDisplay, UserBaseAdmin
 from sqlalchemy.orm import Session
 from db.database import get_db
 from db import db_user
+from auth.oauth2 import get_current_user
 
 
 router = APIRouter(
-    prefix= '/user',
-    tags= ['user']
+    prefix= '/users',
+    tags= ['users']
 )
 
-@router.post('/', response_model= UserDisplay,
-                          summary="Create a New User", 
-            #  description="""
-            #  Creates a new user in the system with the following requirements:
-             
-            #  1. **Unique Username**: The provided username must not already be taken. If the username exists, an error will be raised.
-            #  2. **Unique Email**: The email address must be unique. If the email is already registered, an error will be raised.
-            #  3. **Age Requirement**: The user must be at least 18 years old to create an account.
-            #    An error is raised if the user does not meet this age requirement.
-            #  4. **Secure Password**: The password will be hashed using bcrypt for security.
-
-            #  Error Handling:
-            #  - Returns an **HTTP 400** error if:
-            #    - The username is already taken.
-            #    - The email is already registered.
-            #    - The user is under 18 years old.
-
-            #  After passing all validations, the user information will be securely stored in the database.
-            #  """
+@router.post('/',
+                summary="Create a New User"
             )
 def create_new_user(request: UserBase, db: Session = Depends(get_db)):
     """
@@ -54,50 +38,52 @@ def create_new_user(request: UserBase, db: Session = Depends(get_db)):
     """
     return db_user.create_user(db, request)
 
-@router.put('/username/{username}/update',
-                        summary="Update User Information", 
-            )
-def update_user(username : str,request: UserBase, db: Session = Depends(get_db)):
+
+@router.post('/profile-picture',
+                summary="Upload a new user profile picture")
+
+def upload_file(upload_file : UploadFile = File(...),     
+                db: Session = Depends(get_db),
+                current_user: UserBase = Depends(get_current_user)
+            ):
     """
-        Updates the details of an existing user. The username is provided as a path parameter and the user information in the request body.
+        Uploads a profile picture for the authenticated user.
+
+        This function accepts an uploaded file and saves it to a specified location on the server.
+        Before saving, it checks if the uploaded file is an image (`JPEG`, `PNG`, `GIF`, `BMP`, `TIFF`). 
+        If the file type is not supported, an **HTTP 400** error is raised.
+
+        **Returns**:
+        A success message and the path to the uploaded file.
+
+        **Raises**:
+        - **HTTP 400**: If no file is uploaded or if the file is not an image.
+    """
+    db_user.check_current_user(current_user)
+    return db_user.upload_file(upload_file, db, current_user)
+
+@router.put('/{id}',
+                summary="Update User Information by ID", )
+def update_user_by_id(id : int,request: UserBaseAdmin, db: Session = Depends(get_db), current_user: UserBase = Depends(get_current_user)):
+    """
+        Updates the details of an existing user identified by their unique ID. This endpoint allows an authenticated user to update their own details or an admin to update any user's details. Admins also have the exclusive ability to assign or unassign admin roles.
 
         Update Requirements:
-        
-        1. **Valid Username**: The user with the provided username must exist in the system.
-        2. **Unique Email**: If the email is being updated, it must not be registered to another user. An error is raised if the email is already in use.
-        3. **Age Requirement**: If the date of birth is updated, the user must still meet the minimum age requirement of 18 years old.
-        4. **Secure Password**: If the password is updated, it will be securely hashed using bcrypt.
+
+        1. **Authentication Required**: The user must be authenticated to access this endpoint.
+        2. **User Self-Service**: Authenticated users can only update their own details unless they have admin privileges.
+        3. **Admin Privileges**: Admins can update details for any user and manage admin roles. Unauthorized role modifications result in an HTTP 403 Forbidden error.
+        4. **Valid User ID**: The user with the provided ID must exist in the system. If not, an HTTP 404 error is returned.
+        5. **Unique Email**: If the email is updated, it must be unique and not registered to any other user. An HTTP 400 error is raised if the email is already in use.
+        6. **Age Requirement**: If the date of birth is updated, the user must be at least 18 years old. An HTTP 400 error is returned for underage users.
+        7. **Secure Password**: If the password is updated, it is securely hashed using bcrypt.
 
         Error Handling:
-        - Returns an **HTTP 404** error if the user with the given username does not exist.
-        - Returns an **HTTP 400** error if:
-            - The updated email is already registered with another user.
-            - The user is under 18 years old after updating the date of birth.
-        
-        Upon successful validation, the user's details will be updated and stored in the database.
-    """
-    return db_user.update_user(db, username, request)
+        - **HTTP 404 Not Found**: Returned if no user exists with the given ID.
+        - **HTTP 403 Forbidden**: Returned if an unauthorized user attempts to perform admin-specific actions or if a non-admin user attempts to update another user's details.
+        - **HTTP 400 Bad Request**: Returned under conditions where email conflicts or age requirements are not met.
 
-@router.put('/id/{id}/update',
-                summary="Update User Information by ID", 
-            )
-def update_user_by_id(id : int,request: UserBase, db: Session = Depends(get_db)):
+        Upon successful validation, the user's details are updated in the database.
     """
-        Updates the details of an existing user identified by their unique ID. The ID is provided as a path parameter and the user information in the request body.
-
-        Update Requirements:
-        
-        1. **Valid User ID**: The user with the provided ID must exist in the system.
-        2. **Unique Email**: If the email is being updated, it must not be registered to another user. An error is raised if the email is already in use.
-        3. **Age Requirement**: If the date of birth is updated, the user must still meet the minimum age requirement of 18 years old.
-        4. **Secure Password**: If the password is updated, it will be securely hashed using bcrypt.
-
-        Error Handling:
-        - Returns an **HTTP 404** error if the user with the given ID does not exist.
-        - Returns an **HTTP 400** error if:
-            - The updated email is already registered with another user.
-            - The user is under 18 years old after updating the date of birth.
-        
-        Upon successful validation, the user's details will be updated and stored in the database.
-    """
-    return db_user.update_user_by_id(db, id, request)
+    db_user.check_current_user(current_user)
+    return db_user.update_user_by_id(db, id, request, current_user)
